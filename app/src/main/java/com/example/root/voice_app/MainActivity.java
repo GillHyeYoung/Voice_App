@@ -17,6 +17,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
+import java.text.SimpleDateFormat;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,6 +26,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Locale;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -55,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         //noinspection ConstantConditions
-        findViewById(R.id.bt_play).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.bt_stop).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (!recordTask.isCancelled() && recordTask.getStatus() == AsyncTask.Status.RUNNING) {
@@ -103,7 +105,8 @@ public class MainActivity extends AppCompatActivity {
                     recordTask = new RecordWaveTask(this);
                 }
         }
-        File wavFile = new File("/storage/emulated/0/Voice Recorder/" + System.currentTimeMillis() / 1000 + ".wav");
+        SimpleDateFormat timeStampFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+        File wavFile = new File("/storage/emulated/0/Voice Recorder/" + timeStampFormat.format(new Date()).toString() + ".wav");
         Toast.makeText(this, wavFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
         recordTask.execute(wavFile);
     }
