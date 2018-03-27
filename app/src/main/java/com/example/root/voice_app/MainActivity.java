@@ -60,7 +60,8 @@ public class MainActivity extends Activity {
             @Override
             public void run() {
                 byte[] readData = new byte[mBufferSize];
-                mFilePath = Environment.getExternalStorageDirectory().getAbsolutePath() +"/record.pcm";
+                mFilePath = Environment.getExternalStorageDirectory().getAbsolutePath() +"/storage/emulated/0/Voice Recorder/record.acc";
+                //mFilePath = "/storage/emulated/0/Voice Recorder/record";
                 FileOutputStream fos = null;
                 try {
                     fos = new FileOutputStream(mFilePath);
