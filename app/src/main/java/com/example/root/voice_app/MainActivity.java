@@ -1,150 +1,176 @@
 package com.example.root.voice_app;
 
-//import android.support.v7.app.AppCompatActivity;
-//import android.os.Bundle;
-
-//public class MainActivity extends AppCompatActivity {
-
-//    @Override
-//    protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_main);
-//    }
-//}
-
 import android.app.Activity;
-import android.media.MediaPlayer;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioRecord;
+import android.media.AudioTrack;
 import android.media.MediaRecorder;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.Toast;
 
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class MainActivity extends Activity {
-    static final String RECORDED_FILE = "/home/recorded.mp4";
 
-    MediaPlayer player;
-    MediaRecorder recorder;
+    private static final String TAG = "MainActivity";
 
-    int playbackPosition = 0;
+    private int mAudioSource = MediaRecorder.AudioSource.MIC;
+    private int mSampleRate = 44100;
+    private int mChannelCount = AudioFormat.CHANNEL_IN_STEREO;
+    private int mAudioFormat = AudioFormat.ENCODING_PCM_16BIT;
+    private int mBufferSize = AudioTrack.getMinBufferSize(mSampleRate, mChannelCount, mAudioFormat);
+
+    public AudioRecord mAudioRecord = null;
+
+    public Thread mRecordThread = null;
+    public boolean isRecording = false;
+
+    public AudioTrack mAudioTrack = null;
+    public Thread mPlayThread = null;
+    public boolean isPlaying = false;
+
+    public Button mBtRecord = null;
+    public Button mBtPlay = null;
+
+    public String mFilePath = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button recordBtn = (Button) findViewById(R.id.recordBtn);
-        Button recordStopBtn = (Button) findViewById(R.id.recordStopBtn);
-        Button playBtn = (Button) findViewById(R.id.playBtn);
-        Button playStopBtn = (Button) findViewById(R.id.playStopBtn);
+        mBtRecord = (Button)findViewById(R.id.bt_record);
+        mBtPlay = (Button)findViewById(R.id.bt_play);
 
-        recordBtn.setOnClickListener(new View.OnClickListener() {
+        mAudioRecord = new AudioRecord(mAudioSource, mSampleRate, mChannelCount, mAudioFormat, mBufferSize);
+        mAudioRecord.startRecording();
 
+        mAudioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, mSampleRate, mChannelCount, mAudioFormat, mBufferSize, AudioTrack.MODE_STREAM);
+
+        mRecordThread = new Thread(new Runnable() {
             @Override
-            public void onClick(View v) {
-                if(recorder != null){
-                    recorder.stop();
-                    recorder.release();
-                    recorder = null;
-                }// TODO Auto-generated method stub
-                recorder = new MediaRecorder();
-                recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-                recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-                recorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
-                recorder.setOutputFile(RECORDED_FILE);
-                try{
-                    Toast.makeText(getApplicationContext(),
-                            "녹음을 시작합니다.", Toast.LENGTH_LONG).show();
-                    recorder.prepare();
-                    recorder.start();
-                }catch (Exception ex){
-                    Log.e("SampleAudioRecorder", "Exception : ", ex);
+            public void run() {
+                byte[] readData = new byte[mBufferSize];
+                mFilePath = Environment.getExternalStorageDirectory().getAbsolutePath() +"/record.pcm";
+                FileOutputStream fos = null;
+                try {
+                    fos = new FileOutputStream(mFilePath);
+                } catch(FileNotFoundException e) {
+                    e.printStackTrace();
                 }
-            }
-        });
-        recordStopBtn.setOnClickListener(new View.OnClickListener() {
 
-            @Override
-            public void onClick(View v) {
-                if(recorder == null)
-                    return;
+                while(isRecording) {
+                    int ret = mAudioRecord.read(readData, 0, mBufferSize);
+                    Log.d(TAG, "read bytes is " + ret);
 
-                recorder.stop();
-                recorder.release();
-                recorder = null;
+                    try {
+                        fos.write(readData, 0, mBufferSize);
+                    }catch (IOException e){
+                        e.printStackTrace();
+                    }
+                }
 
-                Toast.makeText(getApplicationContext(),
-                        "녹음이 중지되었습니다.", Toast.LENGTH_LONG).show();
-                // TODO Auto-generated method stub
+                mAudioRecord.stop();
+                mAudioRecord.release();
+                mAudioRecord = null;
 
-            }
-        });
-
-
-
-
-        playBtn.setOnClickListener(new OnClickListener(){
-            public void onClick(View view){
-                try{
-                    playAudio(RECORDED_FILE);
-
-                    Toast.makeText(getApplicationContext(), "음악파일 재생 시작됨.", 2000).show();
-                } catch(Exception e){
+                try {
+                    fos.close();
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         });
 
-        playStopBtn.setOnClickListener(new OnClickListener(){
-            public void onClick(View view){
-                if(player != null){
-                    playbackPosition = player.getCurrentPosition();
-                    player.pause();
-                    Toast.makeText(getApplicationContext(), "음악 파일 재생 중지됨.",2000).show();
+        mPlayThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                byte[] writeData = new byte[mBufferSize];
+                FileInputStream fis = null;
+                try {
+                    fis = new FileInputStream(mFilePath);
+                }catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+
+                DataInputStream dis = new DataInputStream(fis);
+                mAudioTrack.play();
+
+                while(isPlaying) {
+                    try {
+                        int ret = dis.read(writeData, 0, mBufferSize);
+                        if (ret <= 0) {
+                            (MainActivity.this).runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    isPlaying = false;
+                                    mBtPlay.setText("Play");
+                                }
+                            });
+
+                            break;
+                        }
+                        mAudioTrack.write(writeData, 0, ret);
+                    }catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+                mAudioTrack.stop();
+                mAudioTrack.release();
+                mAudioTrack = null;
+
+                try {
+                    dis.close();
+                    fis.close();
+                }catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         });
-
-    }
-    private void playAudio(String url) throws Exception{
-        killMediaPlayer();
-
-        player = new MediaPlayer();
-        player.setDataSource(url);
-        player.prepare();
-        player.start();
     }
 
-    protected void onDestroy() {
-        super.onDestroy();
-        killMediaPlayer();
-    }
+    public void onRecord(View view) {
+        if(isRecording == true) {
+            isRecording = false;
+            mBtRecord.setText("Record");
+        }
+        else {
+            isRecording = true;
+            mBtRecord.setText("Stop");
 
-    private void killMediaPlayer() {
-        if(player != null){
-            try {
-                player.release();
-            } catch(Exception e){
-                e.printStackTrace();
+            if(mAudioRecord == null) {
+                mAudioRecord =  new AudioRecord(mAudioSource, mSampleRate, mChannelCount, mAudioFormat, mBufferSize);
+                mAudioRecord.startRecording();
             }
+            mRecordThread.start();
         }
 
     }
 
-    protected void onPause(){
-        if(recorder != null){
-            recorder.release();
-            recorder = null;
+    public void onPlay(View view) {
+        if(isPlaying == true) {
+            isPlaying = false;
+            mBtPlay.setText("Play");
         }
-        if (player != null){
-            player.release();
-            player = null;
-        }
+        else {
+            isPlaying = true;
+            mBtPlay.setText("Stop");
 
-        super.onPause();
+            if(mAudioTrack == null) {
+                mAudioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, mSampleRate, mChannelCount, mAudioFormat, mBufferSize, AudioTrack.MODE_STREAM);
+            }
+            mPlayThread.start();
+        }
 
     }
 }
