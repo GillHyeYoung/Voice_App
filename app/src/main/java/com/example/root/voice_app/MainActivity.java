@@ -16,6 +16,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
+import android.os.StrictMode;
 
 import java.text.SimpleDateFormat;
 import java.io.File;
@@ -30,16 +31,21 @@ import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
+
+
     private static final int PERMISSION_RECORD_AUDIO = 0;
 
     private RecordWaveTask recordTask = null;
 
+    SimpleDateFormat timeStampFormat = new SimpleDateFormat("HHmm");
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
         //noinspection ConstantConditions
+        //findViewById(R.id.bt_record) {
         findViewById(R.id.bt_record).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
