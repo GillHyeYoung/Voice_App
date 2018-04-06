@@ -29,6 +29,7 @@ import java.nio.ByteOrder;
 import java.util.Locale;
 import java.util.Date;
 
+
 public class MainActivity extends AppCompatActivity {
 
 
@@ -144,14 +145,7 @@ public class MainActivity extends AppCompatActivity {
             this.ctx = ctx;
         }
 
-        /**
-         * Opens up the given file, writes the header, and keeps filling it with raw PCM bytes from
-         * AudioRecord until it reaches 4GB or is stopped by the user. It then goes back and updates
-         * the WAV header to include the proper final chunk sizes.
-         *
-         * @param files Index 0 should be the file to write to
-         * @return Either an Exception (error) or two longs, the filesize, elapsed time in ms (success)
-         */
+
         @Override
         protected Object[] doInBackground(File... files) {
             AudioRecord audioRecord = null;
@@ -228,16 +222,6 @@ public class MainActivity extends AppCompatActivity {
             return new Object[] { files[0].length(), endTime - startTime };
         }
 
-        /**
-         * Writes the proper 44-byte RIFF/WAVE header to/for the given stream
-         * Two size fields are left empty/null since we do not yet know the final stream size
-         *
-         * @param out         The stream to write the header to
-         * @param channelMask An AudioFormat.CHANNEL_* mask
-         * @param sampleRate  The sample rate in hertz
-         * @param encoding    An AudioFormat.ENCODING_PCM_* value
-         * @throws IOException
-         */
         private static void writeWavHeader(OutputStream out, int channelMask, int sampleRate, int encoding) throws IOException {
             short channels;
             switch (channelMask) {
@@ -269,16 +253,6 @@ public class MainActivity extends AppCompatActivity {
             writeWavHeader(out, channels, sampleRate, bitDepth);
         }
 
-        /**
-         * Writes the proper 44-byte RIFF/WAVE header to/for the given stream
-         * Two size fields are left empty/null since we do not yet know the final stream size
-         *
-         * @param out        The stream to write the header to
-         * @param channels   The number of channels
-         * @param sampleRate The sample rate in hertz
-         * @param bitDepth   The bit depth
-         * @throws IOException
-         */
         private static void writeWavHeader(OutputStream out, short channels, int sampleRate, short bitDepth) throws IOException {
             // Convert the multi-byte integers to raw bytes in little endian format as required by the spec
             byte[] littleBytes = ByteBuffer
@@ -312,12 +286,6 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        /**
-         * Updates the given wav file's header to include the final chunk sizes
-         *
-         * @param wav The wav file to update
-         * @throws IOException
-         */
         private static void updateWavHeader(File wav) throws IOException {
             byte[] sizes = ByteBuffer
                     .allocate(8)
