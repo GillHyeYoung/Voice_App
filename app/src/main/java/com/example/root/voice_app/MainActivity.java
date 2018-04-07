@@ -29,10 +29,33 @@ import java.nio.ByteOrder;
 import java.util.Locale;
 import java.util.Date;
 
+import java.io.BufferedReader;  //우와 많다 ㅎㅎ..
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.Menu;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+
 
 public class MainActivity extends AppCompatActivity {
 
-
+    static final String TAG = "Yoon";
+    private Socket socket;  //소켓생성
+    BufferedReader in;      //서버로부터 온 데이터를 읽는다.
+    PrintWriter out;        //서버에 데이터를 전송한다.
+    EditText input;         //화면구성
+    Button button;          //화면구성
+    TextView output;        //화면구성
+    String data;
 
     private static final int PERMISSION_RECORD_AUDIO = 0;
 
@@ -44,7 +67,20 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        input = (EditText) findViewById(R.id.input);
+        button = (Button) findViewById(R.id.button);
+        output = (TextView) findViewById(R.id.output);
 
+        button.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+//버튼이 클릭되면 소켓에 데이터를 출력한다.
+                String data = input.getText().toString(); //글자입력칸에 있는 글자를 String 형태로 받아서 data에 저장
+                Log.w("NETWORK", " " + data);
+                if (data != null) { //만약 데이타가 아무것도 입력된 것이 아니라면
+                    out.println(data); //data를   stream 형태로 변형하여 전송.  변환내용은 쓰레드에 담겨 있다.
+                }
+            }
+        });
         //noinspection ConstantConditions
         //findViewById(R.id.bt_record) {
         findViewById(R.id.bt_record).setOnClickListener(new View.OnClickListener() {
@@ -81,6 +117,49 @@ public class MainActivity extends AppCompatActivity {
             recordTask = new RecordWaveTask(this);
         } else {
             recordTask.setContext(this);
+        }
+
+        Thread worker = new Thread() {    //worker 를 Thread 로 생성
+            public void run() { //스레드 실행구문
+                Log.v(TAG,"9");
+                try {
+//소켓을 생성하고 입출력 스트립을 소켓에 연결한다.
+                    Log.v(TAG,"10");
+                    socket = new Socket("10.100.241.128", 11001); //소켓생성
+                    Log.v(TAG,"11");
+                    out = new PrintWriter(socket.getOutputStream(), true); //데이터를 전송시 stream 형태로 변환하여// 전송한다.
+                    Log.v(TAG,"12");
+                    in = new BufferedReader(new InputStreamReader(
+                            socket.getInputStream())); //데이터 수신시 stream을 받아들인다.
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+//소켓에서 데이터를 읽어서 화면에 표시한다.
+                try {
+                    while (true) {
+                        data = in.readLine(); // in으로 받은 데이타를 String 형태로 읽어 data 에 저장
+                        output.post(new Runnable() {
+                            public void run() {
+                                output.setText(data); //글자출력칸에 서버가 보낸 메시지를 받는다.
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                }
+            }
+        };
+        worker.start();  //onResume()에서 실행.
+    }
+
+    @Override
+    protected void onStop() {  //앱 종료시
+        super.onStop();
+        try {
+            socket.close(); //소켓을 닫는다.
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
