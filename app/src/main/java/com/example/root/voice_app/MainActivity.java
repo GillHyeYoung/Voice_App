@@ -29,6 +29,7 @@ import java.nio.ByteOrder;
 import java.util.Locale;
 import java.util.Date;
 
+
 import java.io.BufferedReader;  //우와 많다 ㅎㅎ..
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -62,8 +63,10 @@ public class MainActivity extends AppCompatActivity {
     private RecordWaveTask recordTask = null;
 
     SimpleDateFormat timeStampFormat = new SimpleDateFormat("HHmm");
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        StrictMode.enableDefaults();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -77,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
                 String data = input.getText().toString(); //글자입력칸에 있는 글자를 String 형태로 받아서 data에 저장
                 Log.w("NETWORK", " " + data);
                 if (data != null) { //만약 데이타가 아무것도 입력된 것이 아니라면
-                    out.println(data); //data를   stream 형태로 변형하여 전송.  변환내용은 쓰레드에 담겨 있다.
+                    out.println(data); //data를   stream 형태로 변형하여 전송.  변환내용은 쓰레드에 담겨 있다.c
                 }
             }
         });
@@ -125,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
 //소켓을 생성하고 입출력 스트립을 소켓에 연결한다.
                     Log.v(TAG,"10");
-                    socket = new Socket("10.100.241.128", 11001); //소켓생성
+                    socket = new Socket("192.168.0.85", 11001); //소켓생성
                     Log.v(TAG,"11");
                     out = new PrintWriter(socket.getOutputStream(), true); //데이터를 전송시 stream 형태로 변환하여// 전송한다.
                     Log.v(TAG,"12");
@@ -143,6 +146,7 @@ public class MainActivity extends AppCompatActivity {
                         output.post(new Runnable() {
                             public void run() {
                                 output.setText(data); //글자출력칸에 서버가 보낸 메시지를 받는다.
+                                Log.v(TAG,"run");
                             }
                         });
                     }
