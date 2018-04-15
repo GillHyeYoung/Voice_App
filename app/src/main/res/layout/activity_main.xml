@@ -7,6 +7,12 @@
     >
 
     <Button
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/btnRead"
+        android:text="내장메모리에서 파일 읽기"/>
+
+    <Button
         android:id="@+id/bt_record"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -55,5 +61,22 @@
         </LinearLayout>
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/text"
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"/>
+
+    <EditText
+        android:id="@+id/edit"
+        android:text="a"
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"/>
+
+    <Button
+        android:id="@+id/sendbtn"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="send!!"/>
 
 </LinearLayout>
+
